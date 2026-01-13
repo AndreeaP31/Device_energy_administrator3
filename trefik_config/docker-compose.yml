@@ -187,10 +187,11 @@ services:
     build:
       context: ../monitoring_microservice/demo
       dockerfile: Dockerfile
-    container_name: monitoring-service
     restart: on-failure
     ports:
       - "8090:8090"
+    deploy:
+      replicas: 2
     environment:
       - DB_IP=monitoring-db
       - DB_PORT=5432
@@ -240,6 +241,24 @@ services:
       - demo_net
     depends_on:
       - gateway-service
+
+  communication-service:
+    build:
+      context: ../communication_microservice/demo # Verifică dacă folderul e la acest nivel
+      dockerfile: Dockerfile
+    container_name: communication-service
+    ports:
+      - "8094:8092" # Mapăm portul intern 8082 la 8092 extern pentru WebSocket
+    environment:
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=guest
+      - SPRING_RABBITMQ_PASSWORD=guest
+    networks:
+      - demo_net
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
 
 volumes:
   user_db_data:
