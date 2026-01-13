@@ -1,0 +1,57 @@
+
+.container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 60px;
+    padding: 20px;
+    width: 100%;
+}
+
+.auth-grid {
+    display: flex;
+    gap: 40px;
+}
+
+
+.card {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    width: 320px;
+}
+
+/* Titles */
+.card h2 {
+    margin-bottom: 20px;
+    text-align: center;
+    color: #333;
+}
+
+
+.card input,
+.card select {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 12px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.card button {
+    width: 100%;
+    padding: 10px;
+    background: #4a6cf7;
+    border: none;
+    border-radius: 6px;
+    color: white;
+    font-size: 15px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.card button:hover {
+    background: #3d58c0;
+}

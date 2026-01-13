@@ -1,0 +1,252 @@
+version: '3.9'
+
+services:
+  rabbitmq:
+    image: rabbitmq:3.12-management
+    container_name: rabbitmq
+    restart: always
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - demo_net
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  user-db:
+    image: postgres:15-alpine
+    container_name: user-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: user_db
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5436:5432"
+    volumes:
+      - user_db_data:/var/lib/postgresql/data
+    networks:
+      - demo_net
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  device-db:
+    image: postgres:15-alpine
+    container_name: device-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: device_db
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5435:5432"
+    volumes:
+      - device_db_data:/var/lib/postgresql/data
+    networks:
+      - demo_net
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  auth-db:
+    image: postgres:15-alpine
+    container_name: auth-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: auth_db
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5437:5432"
+    volumes:
+      - auth_db_data:/var/lib/postgresql/data
+    networks:
+      - demo_net
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  user-service:
+    build:
+      context: ../user_microservice/demo
+      dockerfile: Dockerfile
+    container_name: user-service
+    restart: on-failure
+    ports:
+      - "8085:8082"
+    environment:
+      - DB_IP=user-db
+      - DB_PORT=5432
+      - DB_DBNAME=user_db
+      - DB_USER=postgres
+      - DB_PASSWORD=password
+    networks:
+      - demo_net
+    depends_on:
+      user-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  auth-service:
+    build:
+      context: ../auth_microservice/demo
+      dockerfile: Dockerfile
+    container_name: auth-service
+    restart: on-failure
+    ports:
+      - "8086:8083"
+    environment:
+      - DB_IP=auth-db
+      - DB_PORT=5432
+      - DB_DBNAME=auth_db
+      - DB_USER=postgres
+      - DB_PASSWORD=password
+      - USER_SERVICE_URL=http://user-service:8082
+    networks:
+      - demo_net
+    depends_on:
+      auth-db:
+        condition: service_healthy
+      user-service:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+
+  device-service:
+    build:
+      context: ../device_microservice/demo
+      dockerfile: Dockerfile
+    container_name: device-service
+    restart: on-failure
+    ports:
+      - "8087:8081"
+    environment:
+      - DB_IP=device-db
+      - DB_PORT=5432
+      - DB_DBNAME=device_db
+      - DB_USER=postgres
+      - DB_PASSWORD=password
+    networks:
+      - demo_net
+    depends_on:
+      device-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  monitoring-db:
+    image: postgres:15-alpine
+    container_name: monitoring-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: monitoring_db
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5438:5432"
+    volumes:
+      - monitoring_db_data:/var/lib/postgresql/data
+    networks:
+      - demo_net
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  traefik:
+    image: traefik:v3.0
+    container_name: traefik
+    restart: always
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./traefik.yml:/etc/traefik/traefik.yml:ro"
+      - "./dynamic:/etc/traefik/dynamic:ro"
+      - "./logs:/var/log/traefik"
+    networks:
+      - demo_net
+
+  monitoring-service:
+    build:
+      context: ../monitoring_microservice/demo
+      dockerfile: Dockerfile
+    container_name: monitoring-service
+    restart: on-failure
+    ports:
+      - "8090:8090"
+    environment:
+      - DB_IP=monitoring-db
+      - DB_PORT=5432
+      - DB_DBNAME=monitoring_db
+      - DB_USER=postgres
+      - DB_PASSWORD=password
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=guest
+      - SPRING_RABBITMQ_PASSWORD=guest
+    networks:
+      - demo_net
+    depends_on:
+      monitoring-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  gateway-service:
+    build:
+      context: ../api_gateaway_microservice/demo
+      dockerfile: Dockerfile
+    container_name: gateway-service
+    restart: on-failure
+    ports:
+      - "8088:8084"
+    environment:
+      AUTH_URL: http://auth-service:8083
+      USER_URL: http://user-service:8082
+      DEVICE_URL: http://device-service:8081
+    networks:
+      - demo_net
+    depends_on:
+      - auth-service
+      - user-service
+      - device-service
+
+  frontend-service:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: frontend-service
+    restart: always
+    ports:
+      - "5174:80"
+    networks:
+      - demo_net
+    depends_on:
+      - gateway-service
+
+volumes:
+  user_db_data:
+  device_db_data:
+  auth_db_data:
+  monitoring_db_data:
+
+networks:
+  demo_net:
+    external: true

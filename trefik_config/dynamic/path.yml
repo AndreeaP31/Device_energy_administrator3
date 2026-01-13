@@ -1,0 +1,36 @@
+http:
+  routers:
+    gateway-api:
+      rule: "PathPrefix(`/api`)"
+      entryPoints:
+        - web
+      service: gateway-service
+      middlewares:
+        - strip-api-prefix
+    frontend:
+      rule: "PathPrefix(`/myapp`)"
+      entryPoints:
+        - web
+      service: frontend-service
+      middlewares:
+        - strip-myapp-prefix
+
+  middlewares:
+    strip-api-prefix:
+      stripPrefix:
+        prefixes:
+          - "/api"
+    strip-myapp-prefix:
+      stripPrefix:
+        prefixes:
+          - "/myapp"
+
+  services:
+    gateway-service:
+      loadBalancer:
+        servers:
+          - url: "http://gateway-service:8084"
+    frontend-service:
+      loadBalancer:
+        servers:
+          - url: "http://frontend-service:80"

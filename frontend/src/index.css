@@ -1,0 +1,156 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+    background: #f5f6fa;
+    color: #2f3640;
+}
+
+.container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.auth-layout {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    align-items: flex-start;
+    margin-top: 40px;
+}
+
+.card {
+    background: #ffffff;
+    padding: 24px;
+    border-radius: 12px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.06);
+    width: 100%;
+}
+
+.card h2 {
+    margin-bottom: 16px;
+}
+
+/* F */
+label {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    display: block;
+}
+
+input,
+select {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 12px;
+    border-radius: 8px;
+    border: 1px solid #dcdde1;
+    font-size: 14px;
+}
+
+input:focus,
+select:focus {
+    outline: none;
+    border-color: #40739e;
+}
+
+button {
+    padding: 10px 16px;
+    border: none;
+    background: #273c75;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+button:hover {
+    background: #40739e;
+}
+
+button.danger {
+    background: #e84118;
+}
+
+button.danger:hover {
+    background: #c23616;
+}
+
+/* L */
+.list-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #f1f2f6;
+    font-size: 14px;
+}
+
+.list-row:last-child {
+    border-bottom: none;
+}
+
+.list-row span {
+    flex: 1;
+}
+
+.muted {
+    font-size: 12px;
+    color: #7f8c8d;
+    margin-top: 4px;
+}
+
+/* Al*/
+.alert {
+    margin-bottom: 10px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.alert.error {
+    background: #ffe6e6;
+    color: #b33939;
+}
+
+.alert.success {
+    background: #e6ffed;
+    color: #218c74;
+}
+.auth-layout-single {
+    max-width: 550px;
+    margin: 40px auto;
+}
+
+.tabs {
+    display: flex;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #ddd;
+}
+
+.tabs button {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    color: #666;
+}
+
+.tabs button.active {
+    color: #273c75;
+    border-bottom: 3px solid #273c75;
+}
+
+.tabs button:hover {
+    background: #f6f8ff;
+}
