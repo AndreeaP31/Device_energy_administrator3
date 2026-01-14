@@ -188,8 +188,6 @@ services:
       context: ../monitoring_microservice/demo
       dockerfile: Dockerfile
     restart: on-failure
-    ports:
-      - "8090:8090"
     deploy:
       replicas: 2
     environment:
@@ -244,7 +242,7 @@ services:
 
   communication-service:
     build:
-      context: ../communication_microservice/demo # Verifică dacă folderul e la acest nivel
+      context: ../comunication-service/demo # Verifică dacă folderul e la acest nivel
       dockerfile: Dockerfile
     container_name: communication-service
     ports:

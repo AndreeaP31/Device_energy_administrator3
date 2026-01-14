@@ -9,7 +9,7 @@ WORKDIR /demo
 RUN mvn dependency:go-offline
 COPY ./src/ /demo/src
 WORKDIR /demo
-RUN mvn clean install -DskipTests
+RUN mvn clean install -DskipTests -Dmaven.test.skip=true
 
 FROM eclipse-temurin:25
 WORKDIR /demo

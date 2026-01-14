@@ -2,12 +2,30 @@
 import { useEffect, useState } from "react";
 import { getDevicesForUser, getConsumption } from "../api";
 import ChartComponent from "../components/ChartComponent";
+import SockJS from 'sockjs-client';
+import { over } from 'stompjs';
 
 export default function ClientDashboard({ user }) {
     const [devices, setDevices] = useState([]);
     const [selectedDevice, setSelectedDevice] = useState(null);
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]); // Default Azi (format YYYY-MM-DD)
     const [chartData, setChartData] = useState([]);
+
+    useEffect(() => {
+        if (user && user.userId) {
+            const socket = new SockJS('http://localhost:8080/ws-message'); // Adresa API Gateway
+            const stompClient = over(socket);
+
+            stompClient.connect({}, () => {
+                stompClient.subscribe(`/topic/notifications/${user.userId}`, (payload) => {
+                    const notificationData = JSON.parse(payload.body); // Schimbă numele aici
+                    window.alert(`Atenție! Dispozitivul ${notificationData.deviceId} a depășit limita: ${notificationData.message}`);
+                });
+            });
+
+            return () => stompClient.disconnect();
+        }
+    }, [user]);
 
     useEffect(() => {
         if(user && user.userId) {
