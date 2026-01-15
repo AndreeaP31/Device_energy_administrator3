@@ -15,7 +15,7 @@ export default function ClientDashboard({ user }) {
 
         if (user && user.userId) {
             // Conexiunea se face prin Gateway (8080) către endpoint-ul definit în microserviciu
-            const socket = new SockJS('http://localhost:8091/ws-message');
+            const socket = new SockJS('http://localhost/ws-message');
             stompClient = over(socket);
 
             // Dezactivează log-urile debug dacă sunt prea multe

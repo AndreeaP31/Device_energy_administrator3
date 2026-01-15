@@ -1,5 +1,12 @@
 http:
   routers:
+    comunication-ws:
+      rule: "PathPrefix(`/ws-message`)"
+      entryPoints:
+        - web
+      service: communication-service
+#      middlewares:
+#        - strip-ws-prefix
     gateway-api:
       rule: "PathPrefix(`/api`)"
       entryPoints:
@@ -24,8 +31,16 @@ http:
       stripPrefix:
         prefixes:
           - "/myapp"
+    strip-ws-prefix:
+      stripPrefix:
+        prefixes:
+          - "/ws-message"
 
   services:
+    communication-service:
+      loadBalancer:
+        servers:
+          - url: "http://communication-service:8091"
     gateway-service:
       loadBalancer:
         servers:

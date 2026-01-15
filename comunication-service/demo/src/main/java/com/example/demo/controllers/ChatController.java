@@ -27,17 +27,18 @@ public class ChatController {
         messagingTemplate.convertAndSendToUser(
                 chatMessage.getReceiverName(), "/queue/private", chatMessage);
     }
+
     @MessageMapping("/chat.typing")
     public void handleTyping(@Payload ChatMessage chatMessage) {
         // Redirecționăm notificarea de "scrie cineva..." către celălalt user
         messagingTemplate.convertAndSendToUser(
                 chatMessage.getReceiverName(), "/queue/typing", chatMessage);
-    }
-    @MessageMapping("/chat.typing")
-    public void sendTypingNotification(@Payload ChatMessage chatMessage) {
-        messagingTemplate.convertAndSendToUser(
-                chatMessage.getReceiverName(), "/queue/typing", chatMessage);
-    }
+   }
+//    @MessageMapping("/chat.typing")
+//    public void sendTypingNotification(@Payload ChatMessage chatMessage) {
+//        messagingTemplate.convertAndSendToUser(
+//                chatMessage.getReceiverName(), "/queue/typing", chatMessage);
+//    }
     // Handlers for sending messages
     @MessageMapping("/chat.sendMessage")
     public void sendMessage(@Payload ChatMessage chatMessage) {
