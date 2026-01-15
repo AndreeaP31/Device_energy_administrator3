@@ -12,16 +12,16 @@ export default function ClientDashboard({ user }) {
     const [chartData, setChartData] = useState([]);
     useEffect(() => {
         let stompClient = null;
-
+        const token = localStorage.getItem('token');
         if (user && user.userId) {
             // Conexiunea se face prin Gateway (8080) către endpoint-ul definit în microserviciu
-            const socket = new SockJS('http://localhost/api/communication/ws-message');
+            const socket = new SockJS('http://localhost/ws-message');
             stompClient = over(socket);
 
             // Dezactivează log-urile debug dacă sunt prea multe
             stompClient.debug = null;
 
-            stompClient.connect({}, () => {
+            stompClient.connect({ 'Authorization': 'Bearer ' + token }, () => {
                 console.log('Connected to WebSocket via Gateway');
 
                 // Subscriere la topic-ul de notificări pentru user-ul logat

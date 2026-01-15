@@ -37,6 +37,7 @@ public class GatewayController {
     public ResponseEntity<?> forwardAuth(HttpServletRequest request) throws IOException {
         return forward(request, authService);
     }
+
     @RequestMapping("/ws-message/**")
     public ResponseEntity<?> proxyWebSocket(HttpServletRequest request, @RequestBody(required = false) byte[] body) {
         // Calculăm URL-ul către serviciul de comunicații (port 8091)

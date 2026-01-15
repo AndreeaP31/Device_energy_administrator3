@@ -34,6 +34,7 @@ public class JwtAuthenticationFilter implements Filter {
             resp.setStatus(HttpServletResponse.SC_OK);
             return;
         }
+
         String fullPath = req.getRequestURI();
         if (fullPath.contains("/ws-message")) {
             System.out.println("   WebSocket detected → bypass JWT filter for handshake");
@@ -60,6 +61,11 @@ public class JwtAuthenticationFilter implements Filter {
 
         if (path.equals("/users") && cachedRequest.getMethod().equals("POST")) {
             System.out.println("   POST /users - allowing without token (internal call)");
+            chain.doFilter(cachedRequest, response);
+            return;
+        }
+        if (path.startsWith("/ws-message")) {
+            System.out.println("   WebSocket handshake - allowing for STOMP connection");
             chain.doFilter(cachedRequest, response);
             return;
         }
