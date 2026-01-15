@@ -31,6 +31,7 @@ public class FilterConfig {
         FilterRegistrationBean<JwtAuthenticationFilter> registrationBean = new FilterRegistrationBean<>();
         registrationBean.setFilter(jwtAuthenticationFilter);
         registrationBean.addUrlPatterns("/*");
+        registrationBean.addInitParameter("excludeUrls", "/auth/**,/ws-message/**");
         registrationBean.setOrder(2); // after CORS
         return registrationBean;
     }

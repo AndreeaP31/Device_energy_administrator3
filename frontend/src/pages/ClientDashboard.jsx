@@ -10,20 +10,40 @@ export default function ClientDashboard({ user }) {
     const [selectedDevice, setSelectedDevice] = useState(null);
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]); // Default Azi (format YYYY-MM-DD)
     const [chartData, setChartData] = useState([]);
-
     useEffect(() => {
+        let stompClient = null;
+
         if (user && user.userId) {
-            const socket = new SockJS('http://localhost:8080/ws-message'); // Adresa API Gateway
-            const stompClient = over(socket);
+            // Conexiunea se face prin Gateway (8080) către endpoint-ul definit în microserviciu
+            const socket = new SockJS('http://localhost:8091/ws-message');
+            stompClient = over(socket);
+
+            // Dezactivează log-urile debug dacă sunt prea multe
+            stompClient.debug = null;
 
             stompClient.connect({}, () => {
-                stompClient.subscribe(`/topic/notifications/${user.userId}`, (payload) => {
-                    const notificationData = JSON.parse(payload.body); // Schimbă numele aici
-                    window.alert(`Atenție! Dispozitivul ${notificationData.deviceId} a depășit limita: ${notificationData.message}`);
-                });
-            });
+                console.log('Connected to WebSocket via Gateway');
 
-            return () => stompClient.disconnect();
+                // Subscriere la topic-ul de notificări pentru user-ul logat
+                stompClient.subscribe(`/topic/notifications/${user.userId}`, (payload) => {
+                    const notification = JSON.parse(payload.body);
+                    window.alert(`ALERTĂ CONSUM: Dispozitivul ${notification.deviceId} a depășit limita!`);
+                });
+            }, (error) => {
+                console.error('WebSocket Error: ', error);
+            });
+        }
+
+        // Cleanup: închidem conexiunea când user-ul pleacă de pe pagină
+        return () => {
+            if (stompClient) stompClient.disconnect();
+        };
+    }, [user]);
+
+    // Restul logic-ului pentru dispozitive și consum rămâne neschimbat
+    useEffect(() => {
+        if(user && user.userId) {
+            getDevicesForUser(user.userId).then(setDevices);
         }
     }, [user]);
 

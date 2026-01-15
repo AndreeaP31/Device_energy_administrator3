@@ -10,6 +10,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 
 @RestController
 public class GatewayController {
@@ -35,6 +36,28 @@ public class GatewayController {
     @RequestMapping("/auth/**")
     public ResponseEntity<?> forwardAuth(HttpServletRequest request) throws IOException {
         return forward(request, authService);
+    }
+    @RequestMapping("/ws-message/**")
+    public ResponseEntity<?> proxyWebSocket(HttpServletRequest request, @RequestBody(required = false) byte[] body) {
+        // Calculăm URL-ul către serviciul de comunicații (port 8091)
+        String path = request.getRequestURI();
+        String query = request.getQueryString();
+        String targetUrl = "http://localhost:8091" + path + (query != null ? "?" + query : "");
+
+        try {
+            // Transferăm headerele originale (inclusiv cele de Upgrade pentru WebSocket)
+            HttpHeaders headers = new HttpHeaders();
+            Collections.list(request.getHeaderNames()).forEach(headerName ->
+                    headers.add(headerName, request.getHeader(headerName))
+            );
+
+            HttpEntity<byte[]> entity = new HttpEntity<>(body, headers);
+
+            // Trimitem cererea HTTP inițială (handshake)
+            return restTemplate.exchange(targetUrl, HttpMethod.valueOf(request.getMethod()), entity, byte[].class);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
     }
 
     @RequestMapping("/users/**")

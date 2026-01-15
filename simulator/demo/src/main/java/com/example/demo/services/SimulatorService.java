@@ -21,7 +21,7 @@ public class SimulatorService implements CommandLineRunner {
 
     private final RabbitTemplate rabbitTemplate;
     private final Random random = new Random();
-    @Value("${simulator.device-id}")
+    @Value("b09f12cc-a836-491b-b4da-b6e756f2844e")
     private String deviceIdString;
 
 

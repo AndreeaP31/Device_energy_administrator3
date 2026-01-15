@@ -1,5 +1,6 @@
 package com.example.demo.services;
 
+import com.example.demo.dtos.AlertMessage;
 import com.example.demo.dtos.MeasurementDTO;
 import com.example.demo.entities.HourlyConsumption;
 import com.example.demo.entities.MonitoredDevice;
@@ -7,6 +8,7 @@ import com.example.demo.repositories.HourlyConsumptionRepository;
 import com.example.demo.repositories.MonitoredDeviceRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,9 +30,16 @@ public class MonitoringService {
     private final HourlyConsumptionRepository consumptionRepository;
     private final MonitoredDeviceRepository deviceRepository;
 
-    public MonitoringService(HourlyConsumptionRepository consumptionRepository, MonitoredDeviceRepository deviceRepository) {
+
+    private final RabbitTemplate rabbitTemplate;
+
+    // 2. Adaugă-l în constructor pentru Dependency Injection
+    public MonitoringService(HourlyConsumptionRepository consumptionRepository,
+                             MonitoredDeviceRepository deviceRepository,
+                             RabbitTemplate rabbitTemplate) {
         this.consumptionRepository = consumptionRepository;
         this.deviceRepository = deviceRepository;
+        this.rabbitTemplate = rabbitTemplate;
     }
 
     @Transactional
@@ -55,7 +64,15 @@ public class MonitoringService {
 
         consumptionRepository.save(consumption);
         LOGGER.info("Updated consumption for device {}: {} (+{})", device.getId(), newTotal, measurementDTO.getMeasurementValue());
-
+        if(newTotal > device.getMaxHourlyConsumption()) {
+            AlertMessage alert = new AlertMessage(
+                    device.getUserId().toString(),
+                    device.getId().toString(),
+                    "Consumul de " + newTotal + " a depasit limita de " + device.getMaxHourlyConsumption()
+            );
+            rabbitTemplate.convertAndSend("overconsumption_queue", alert);
+            LOGGER.info("Alertă trimisă pentru device-ul {}", device.getId());
+        }
 
     }
 

@@ -30,6 +30,7 @@ public class RoleFilter implements Filter {
             return;
         }
 
+
         String path = request.getRequestURI();
 
         if (path.startsWith("/api")) {

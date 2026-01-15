@@ -13,7 +13,12 @@ public class RabbitMQConfig {
 
     public static final String EXCHANGE_NAME = "energy-platform-exchange";
     public static final String MONITORING_QUEUE = "monitoring-queue";
+    public static final String OVERCONSUMPTION_QUEUE = "overconsumption_queue";
 
+    @Bean
+    public Queue overconsumptionQueue() {
+        return new Queue(OVERCONSUMPTION_QUEUE, true);
+    }
     @Bean
     public TopicExchange exchange() {
         return new TopicExchange(EXCHANGE_NAME);

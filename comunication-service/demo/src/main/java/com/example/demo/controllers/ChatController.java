@@ -28,6 +28,12 @@ public class ChatController {
                 chatMessage.getReceiverName(), "/queue/private", chatMessage);
     }
     @MessageMapping("/chat.typing")
+    public void handleTyping(@Payload ChatMessage chatMessage) {
+        // Redirecționăm notificarea de "scrie cineva..." către celălalt user
+        messagingTemplate.convertAndSendToUser(
+                chatMessage.getReceiverName(), "/queue/typing", chatMessage);
+    }
+    @MessageMapping("/chat.typing")
     public void sendTypingNotification(@Payload ChatMessage chatMessage) {
         messagingTemplate.convertAndSendToUser(
                 chatMessage.getReceiverName(), "/queue/typing", chatMessage);
@@ -35,10 +41,14 @@ public class ChatController {
     // Handlers for sending messages
     @MessageMapping("/chat.sendMessage")
     public void sendMessage(@Payload ChatMessage chatMessage) {
-        // Logic: Send to a specific topic or user
-        // If a client sends it, admin should receive it.
-        // If admin sends it, the specific client should receive it.
-        messagingTemplate.convertAndSend("/topic/messages", chatMessage);
+        if ("admin".equalsIgnoreCase(chatMessage.getReceiverName())) {
+            messagingTemplate.convertAndSend("/topic/admin-messages", chatMessage);
+        } else {
+            // Dacă adminul răspunde, trimitem către coada privată a clientului
+            // Frontend-ul clientului trebuie să fie abonat la /user/queue/private
+            messagingTemplate.convertAndSendToUser(
+                    chatMessage.getReceiverName(), "/queue/private", chatMessage);
+        }
     }
 
     @MessageMapping("/chat.privateMessage")
