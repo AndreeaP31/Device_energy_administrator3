@@ -34,6 +34,12 @@ public class JwtAuthenticationFilter implements Filter {
             resp.setStatus(HttpServletResponse.SC_OK);
             return;
         }
+        String fullPath = req.getRequestURI();
+        if (fullPath.contains("/ws-message")) {
+            System.out.println("   WebSocket detected → bypass JWT filter for handshake");
+            chain.doFilter(request, response);
+            return;
+        }
 
         CachedBodyHttpServletRequest cachedRequest = new CachedBodyHttpServletRequest(req);
 
@@ -42,6 +48,7 @@ public class JwtAuthenticationFilter implements Filter {
         if (path.startsWith("/api")) {
             path = path.substring(4);
         }
+
 
         System.out.println("   Path after prefix removal: " + path);
 
