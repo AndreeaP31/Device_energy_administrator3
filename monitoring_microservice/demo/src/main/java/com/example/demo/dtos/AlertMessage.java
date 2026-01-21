@@ -8,7 +8,7 @@ public class AlertMessage {
     private String deviceId;
     private String description;
 
-    public AlertMessage(String deviceId, String userId, String description) {
+    public AlertMessage(String userId, String deviceId, String description) {
         this.deviceId = deviceId;
         this.userId = userId;
         this.description = description;

@@ -1,5 +1,5 @@
 // frontend/src/pages/ClientDashboard.jsx
-import { useEffect, useState } from "react";
+import { useEffect, useState , useRef} from "react";
 import { getDevicesForUser, getConsumption } from "../api";
 import ChartComponent from "../components/ChartComponent";
 import SockJS from 'sockjs-client';
@@ -10,35 +10,72 @@ export default function ClientDashboard({ user }) {
     const [selectedDevice, setSelectedDevice] = useState(null);
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]); // Default Azi (format YYYY-MM-DD)
     const [chartData, setChartData] = useState([]);
+    const [messages, setMessages] = useState([]);
+    const [inputValue, setInputValue] = useState("");
+    const [stompClient, setStompClient] = useState(null);
+    const messagesEndRef = useRef(null);
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages]);
     useEffect(() => {
         let stompClient = null;
         const token = localStorage.getItem('token');
         if (user && user.userId) {
-            // Conexiunea se face prin Gateway (8080) către endpoint-ul definit în microserviciu
+            // LOG DE DEBUG: Verifică ce ID are user-ul în browser
+            console.log("Subscribing to User ID:", user.userId);
+
             const socket = new SockJS('http://localhost/ws-message');
             stompClient = over(socket);
-
-            // Dezactivează log-urile debug dacă sunt prea multe
             stompClient.debug = null;
 
-            stompClient.connect({ 'Authorization': 'Bearer ' + token }, () => {
-                console.log('Connected to WebSocket via Gateway');
-
-                // Subscriere la topic-ul de notificări pentru user-ul logat
+            stompClient.connect({'Authorization': 'Bearer ' + token}, () => {
+                console.log('Connected. Subscribing to: /topic/notifications/' + user.userId);
+                setStompClient(stompClient);
+                // Folosește user.userId (care trebuie să fie UUID-ul b09f...)
                 stompClient.subscribe(`/topic/notifications/${user.userId}`, (payload) => {
+                    console.log("MESAJ PRIMIT PE WEBSOCKET:", payload.body);
                     const notification = JSON.parse(payload.body);
                     window.alert(`ALERTĂ CONSUM: Dispozitivul ${notification.deviceId} a depășit limita!`);
+                });
+                stompClient.subscribe('/topic/public', (payload) => {
+                    const msg = JSON.parse(payload.body);
+                    setMessages(prev => [...prev, msg]);
+                });
+                stompClient.subscribe(`/topic/chat/${user.userId}`, (payload) => {
+                    const msg = JSON.parse(payload.body);
+                    setMessages(prev => [...prev, msg]);
                 });
             }, (error) => {
                 console.error('WebSocket Error: ', error);
             });
         }
 
-        // Cleanup: închidem conexiunea când user-ul pleacă de pe pagină
         return () => {
             if (stompClient) stompClient.disconnect();
         };
+
     }, [user]);
+    const handleSendMessage = () => {
+        if (inputValue.trim() && stompClient && stompClient.connected) {
+            const chatMsg = {
+                sender: user.name || "Client",
+                content: inputValue,
+                receiverId: user.userId, // ID-ul tău pentru ca Adminul să știe cui să răspundă
+                timestamp: new Date().toISOString()
+            };
+
+            stompClient.send("/app/chat.send", {}, JSON.stringify(chatMsg));
+
+            stompClient.send("/app/chat.private", {}, JSON.stringify(chatMsg));
+
+            setInputValue("");
+        }
+    };
 
     // Restul logic-ului pentru dispozitive și consum rămâne neschimbat
     useEffect(() => {
@@ -64,7 +101,7 @@ export default function ClientDashboard({ user }) {
     }, [selectedDevice, selectedDate]);
 
     return (
-        <div className="container">
+        <div className="container" style={{ display: 'flex', gap: '20px', padding: '20px' }}>
             <div className="card">
                 <h2>Your Devices</h2>
 
@@ -105,6 +142,64 @@ export default function ClientDashboard({ user }) {
                     </div>
                 )}
             </div>
+        {/* COLOANA DREAPTĂ: CHATBOT (Rule-based) */}
+        <div className="card" style={{ flex: 1, minWidth: '350px', border: '2px solid #273c75', height: 'fit-content' }}>
+            <h3 style={{ color: '#273c75' }}>Energy Support Bot</h3>
+            <div style={{
+                height: '350px',
+                overflowY: 'auto',
+                background: '#f9f9f9',
+                padding: '10px',
+                borderRadius: '5px',
+                marginBottom: '10px',
+                border: '1px solid #ddd'
+            }}>
+                {messages.map((m, i) => {
+                    const isMe=m.sender===user.name;
+                    return (
+                        <div key={i} style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: isMe ? 'flex-end' : 'flex-start', // Dreapta pentru noi, stânga pentru restul
+                            marginBottom: '10px'
+                        }}>
+                            <small style={{
+                                fontWeight: 'bold',
+                                color: '#555',
+                                marginBottom: '2px',
+                                marginRight: isMe ? '5px' : '0',
+                                marginLeft: isMe ? '0' : '5px'
+                            }}>
+                                {m.sender}
+                            </small>
+                            <div style={{
+                                background: isMe ? '#273c75' : '#e3f2fd', // Albastru închis pentru noi, deschis pentru bot
+                                color: isMe ? 'white' : '#0d47a1',
+                                padding: '10px 15px',
+                                borderRadius: isMe ? '15px 15px 0 15px' : '15px 15px 15px 0', // Bule de chat stilizate
+                                display: 'inline-block',
+                                maxWidth: '85%',
+                                fontSize: '14px',
+                                boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+                                wordBreak: 'break-word'
+                            }}>
+                                {m.content}
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+            <div style={{ display: 'flex', gap: '5px' }}>
+                <input
+                    style={{ flex: 1, padding: '10px' }}
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    placeholder="Type 'ajutor'..."
+                    onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                />
+                <button onClick={handleSendMessage}>Send</button>
+            </div>
+        </div>
         </div>
     );
 }

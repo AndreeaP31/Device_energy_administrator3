@@ -3,6 +3,7 @@ package com.example.demo.dtos;
 public class ChatMessage {
     private String senderName;
     private String receiverName;
+    private String timestamp;private String receiverId;
 
     public String getSenderName() {
         return senderName;
@@ -12,13 +13,15 @@ public class ChatMessage {
         this.senderName = senderName;
     }
 
-    public String getContent() {
-        return content;
+
+    public void setTimestamp(String timestamp) {
+        this.timestamp = timestamp;
     }
 
-    public void setContent(String content) {
-        this.content = content;
-    }
+
+
+
+
 
     public String getReceiverName() {
         return receiverName;
@@ -26,6 +29,19 @@ public class ChatMessage {
 
     public void setReceiverName(String receiverName) {
         this.receiverName = receiverName;
+    }
+    public String getReceiverId(){
+        return receiverId;
+    }
+    public String getContent(){
+        return content;
+    }
+    public void setContent(String content){
+        this.content=content;
+    }
+
+    public void setReceiverId(String receiverId){
+        this.receiverId=receiverId;
     }
 
     public MessageType getType() {
