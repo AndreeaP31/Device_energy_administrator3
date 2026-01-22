@@ -1,6 +1,7 @@
 package com.example.demo.controllers;
 
 import com.example.demo.dtos.ChatMessage;
+import com.example.demo.services.GeminiService;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -14,9 +15,10 @@ import java.util.Map;
 public class ChatController {
     private final SimpMessagingTemplate messagingTemplate;
     private final Map<String, String> botRules = new HashMap<>();
-
-    public ChatController(SimpMessagingTemplate messagingTemplate) {
+    private final GeminiService geminiService;
+    public ChatController(SimpMessagingTemplate messagingTemplate, GeminiService geminiService) {
         this.messagingTemplate = messagingTemplate;
+        this.geminiService = geminiService;
         initializeRules();
     }
 
@@ -33,8 +35,8 @@ public class ChatController {
         botRules.put("multumesc", "Cu plăcere! O zi plină de energie!");
     }
 
-    @MessageMapping("/chat.send")
-    public void sendMessage(@Payload ChatMessage chatMessage) {
+    @MessageMapping("/chat.send1")
+    public void sendMessage1(@Payload ChatMessage chatMessage) {
         // 1. Trimitem mesajul original (de la user la admin/chat)
         messagingTemplate.convertAndSend("/topic/public", chatMessage);
 
@@ -100,6 +102,55 @@ public class ChatController {
 //                    chatMessage.getReceiverName(), "/queue/private", chatMessage);
 //        }
 //    }
+@MessageMapping("/chat.send")
+public void sendMessage(@Payload ChatMessage chatMessage) {
+    // 1. Trimitem mesajul original pe canalul public (pentru a apărea în UI-ul utilizatorului)
+    messagingTemplate.convertAndSend("/topic/public", chatMessage);
+
+    String content = chatMessage.getContent().toLowerCase();
+    if (content.contains("suport ai") || content.contains("ai suport")) {
+        // Notificăm utilizatorul că AI-ul procesează
+        sendBotMessage("Sistemul AI se gândește...");
+
+        // Apelăm serviciul Gemini
+        String aiResponse = geminiService.getAiResponse(chatMessage.getContent());
+
+        // Trimitem răspunsul generat de AI
+        sendBotMessage(aiResponse);
+        return; // Oprim execuția pentru a nu activa chatbot-ul de reguli
+    }
+
+    // 2. Logica de rutare către ADMIN
+    if (content.contains("ajutor")) {
+        // Trimitem o notificare specială către admin pe un topic dedicat
+        messagingTemplate.convertAndSend("/topic/admin-message", chatMessage);
+
+        // Opțional: Confirmăm utilizatorului că un admin a fost notificat
+        ChatMessage notification = new ChatMessage();
+        notification.setSenderName("EnergyBot");
+        notification.setContent("Mesajul tău a fost trimis către un administrator. Vei primi un răspuns în curând!");
+        notification.setTimestamp(LocalDateTime.now().toString());
+        messagingTemplate.convertAndSend("/topic/public", notification);
+        return; // Oprim execuția aici pentru a nu mai trece prin regulile de bot de mai jos
+    }
+
+    // 3. Logica de Chatbot existentă (Rule-based)
+    String botResponse = null;
+    for (String keyword : botRules.keySet()) {
+        if (content.contains(keyword)) {
+            botResponse = botRules.get(keyword);
+            break;
+        }
+    }
+
+    if (botResponse != null) {
+        ChatMessage botMsg = new ChatMessage();
+        botMsg.setSenderName("EnergyBot");
+        botMsg.setContent(botResponse);
+        botMsg.setTimestamp(LocalDateTime.now().toString());
+        messagingTemplate.convertAndSend("/topic/public", botMsg);
+    }
+}
 
     @MessageMapping("/chat.private")
     public void sendPrivateMessage(@Payload ChatMessage chatMessage) {

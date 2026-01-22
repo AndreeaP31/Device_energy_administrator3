@@ -3,7 +3,8 @@ package com.example.demo.dtos;
 public class ChatMessage {
     private String senderName;
     private String receiverName;
-    private String timestamp;private String receiverId;
+    private String timestamp;
+    private String receiverId;
 
     public String getSenderName() {
         return senderName;

@@ -65,14 +65,12 @@ export default function ClientDashboard({ user }) {
             const chatMsg = {
                 sender: user.name || "Client",
                 content: inputValue,
-                receiverId: user.userId, // ID-ul tău pentru ca Adminul să știe cui să răspundă
+                senderId: user.userId, // Foarte important: Adminul are nevoie de acest ID
                 timestamp: new Date().toISOString()
             };
 
+            // Trimitem către metoda de mai sus
             stompClient.send("/app/chat.send", {}, JSON.stringify(chatMsg));
-
-            stompClient.send("/app/chat.private", {}, JSON.stringify(chatMsg));
-
             setInputValue("");
         }
     };
